@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rifa Activa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="js/rifas.js"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .animate-fade-in-up {
+        animation: fadeInUp 0.6s ease-out forwards;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-800">
+    <!-- Navbar -->
+    <header id="navbar"></header>
+
+    <!-- Sección de bienvenida -->
+    <section
+      class="flex flex-col justify-center items-center min-h-screen text-center bg-gradient-to-br from-blue-50 to-white px-4"
+    >
+      <h1 class="text-5xl font-bold text-gray-800 mb-6 leading-tight">
+        <span class="text-blue-600"
+          >Gana Premios Increíbles con un Solo Boleto!</span
+        >
+      </h1>
+      <img
+        src="img/michel.jfif"
+        alt="BERA SBR 150cc"
+        class="w-72 h-72 md:w-96 md:h-96 rounded-lg shadow-lg object-cover mb-6"
+      />
+      <p class="text-xl text-gray-700 max-w-xl">
+        <span class="font-bold text-gray-900"
+          >Participa en nuestras rifas y llévate los mejores premios. ¡Cada
+          boleto es una oportunidad para ganar!</span
+        >!
+      </p>
+    </section>
+
+    <!-- Sección Rifa Activa -->
+    <section id="rifa-activa" class="min-h-screen bg-white py-12">
+      <h2 class="text-4xl font-extrabold text-center mb-8 animate-fade-in-up">
+        ¡Rifa Activa!
+      </h2>
+      <div
+        id="rifa-activa-contenido"
+        class="max-w-3xl mx-auto text-center text-gray-600 px-4 animate-fade-in-up"
+      >
+        Cargando rifa activa...
+      </div>
+    </section>
+
+    <!-- Sección Rifas Pasadas -->
+    <section class="min-h-screen bg-gray-100 py-12">
+      <h2 class="text-3xl font-bold text-center mb-8 animate-fade-in-up">
+        Rifas Pasadas
+      </h2>
+      <div
+        id="rifas-container"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 mb-6 animate-fade-in-up"
+      ></div>
+      <div
+        id="pagination-container"
+        class="text-center mt-4 animate-fade-in-up"
+      ></div>
+    </section>
+
+    <!-- Footer -->
+    <footer
+      id="footer"
+      class="bg-gray-200 py-4 text-center text-sm text-gray-600"
+    >
+      © 2025 Rifas Empire. Todos los derechos reservados.
+    </footer>
+
+    <script src="js/main.js"></script>
+  </body>
+</html>

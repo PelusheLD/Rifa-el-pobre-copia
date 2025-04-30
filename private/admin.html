@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel de Administración</title>
+    <script defer src="/js/toast.js"></script>
+    <script defer src="/js/crear-rifa.js"></script>
+    <script defer src="/js/edit-rifa.js"></script>
+    <script defer src="/administrador-rifas/js/lista-rifas-pagos.js"></script>
+    <script
+      defer
+      src="/administrador-rifas/js/mostrarParticipantesRifa.js"
+    ></script>
+    <script
+      defer
+      src="/administrador-rifas/js/mostrarNumerosParticipantesRifa.js"
+    ></script>
+    <script
+      defer
+      src="/administrador-rifas/js/accionesNumerosParticipantes.js"
+    ></script>
+    <script defer src="/js/admin.js"></script>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100 h-screen flex overflow-hidden">
+    <div
+      id="toast"
+      class="fixed bottom-6 right-6 z-50 hidden bg-white border-l-4 p-4 shadow-lg rounded-lg transition-all duration-300 max-w-xs"
+    >
+      <p id="toast-message" class="text-sm font-medium"></p>
+    </div>
+
+    <!-- Sidebar -->
+    <aside
+      class="w-64 bg-white shadow-lg flex flex-col h-screen fixed top-0 left-0"
+    >
+      <div class="px-6 py-4 font-bold text-xl border-b">Administrador</div>
+      <nav class="flex-1 px-4 py-6 space-y-4">
+        <a href="#" class="block text-gray-700 hover:text-blue-600"
+          >🏠 Dashboard</a
+        >
+        <a href="#" class="block text-gray-700 hover:text-blue-600"
+          >➕ Crear Rifa</a
+        >
+        <a href="#" class="block text-gray-700 hover:text-blue-600"
+          >✅ Editar Estado de Rifa</a
+        >
+        <a
+          href="#"
+          class="block text-gray-700 hover:text-blue-600"
+          id="ver-participantes"
+        >
+          👤 Administrar Pagos
+        </a>
+
+        <!-- Agrega más secciones aquí -->
+      </nav>
+    </aside>
+
+    <!-- Contenido principal -->
+    <main class="flex-1 ml-64 p-6 overflow-y-auto flex flex-col">
+      <h1 class="text-3xl font-semibold mb-6">Bienvenido al panel</h1>
+      <div id="admin-content" class="flex-1 flex flex-col">
+        <!-- Aquí va el contenido dinámico -->
+        <p class="text-gray-600 mb-6">Selecciona una opción del menú.</p>
+        <div id="resultados-container" class="flex-1">
+          <!-- Los resultados se cargarán aquí -->
+        </div>
+      </div>
+      <!-- Aquí va el footer que estará dentro del contenido -->
+      <footer
+        id="footer"
+        class="bg-gray-500 text-white py-5 text-center py-4 mt-6"
+      >
+        <div>
+          <p class="text-sm mt-2">
+            &copy; 2025 Rifas Online. Todos los derechos reservados.
+          </p>
+        </div>
+      </footer>
+    </main>
+  </body>
+</html>

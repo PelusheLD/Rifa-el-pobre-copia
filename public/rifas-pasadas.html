@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rifas Pasadas</title>
+    <script defer src="js/rifas.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-50 min-h-screen flex flex-col">
+    <header id="navbar"></header>
+    <div class="container mx-auto px-4 py-8 flex-grow">
+      <h1 class="text-3xl font-bold mb-6 text-center">Rifas Pasadas</h1>
+      <div
+        id="rifas-container"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6"
+      ></div>
+    </div>
+
+    <!-- Paginación -->
+    <div id="pagination-container" class="text-center mt-6 mb-8">
+      <!-- Los botones de paginación se cargarán aquí -->
+    </div>
+
+    <footer
+      id="footer"
+      class="bg-gray-200 py-4 text-center text-sm text-gray-600"
+    >
+      © 2025 Rifas Empire. Todos los derechos reservados.
+    </footer>
+
+    <script src="js/main.js"></script>
+  </body>
+</html>
