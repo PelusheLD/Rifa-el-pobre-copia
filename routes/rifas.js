@@ -1,43 +1,71 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const supabase = require('../supabaseClient');
 
 // Obtener todas las rifas
-router.get("/", (req, res) => {
-  db.query(
-    `
-    SELECT 
-      r.*, 
-      COALESCE(SUM(CASE WHEN n.estado = 'pagado' THEN 1 ELSE 0 END), 0) AS numeros_pagados,
-      COALESCE(SUM(CASE WHEN n.estado = 'apartado' THEN 1 ELSE 0 END), 0) AS numeros_apartados
-    FROM rifas r
-    LEFT JOIN numeros_rifa n ON r.id = n.id_rifa
-    GROUP BY r.id
-    ORDER BY r.id DESC
-    `,
-    (err, results) => {
-      if (err) return res.status(500).json({ error: "Error al obtener rifas" });
-      res.json(results);
-    }
-  );
+router.get("/", async (req, res) => {
+  try {
+    // Primero obtenemos todas las rifas
+    const { data: rifas, error: rifasError } = await supabase
+      .from('rifas')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (rifasError) throw rifasError;
+
+    // Luego obtenemos los conteos de números para cada rifa
+    const rifasConConteo = await Promise.all(rifas.map(async (rifa) => {
+      const { data: numeros, error: numerosError } = await supabase
+        .from('numeros_rifa')
+        .select('estado')
+        .eq('id_rifa', rifa.id);
+
+      if (numerosError) throw numerosError;
+
+      const numerosPagados = numeros.filter(n => n.estado === 'pagado').length;
+      const numerosApartados = numeros.filter(n => n.estado === 'apartado').length;
+
+      return {
+        ...rifa,
+        numeros_pagados: numerosPagados,
+        numeros_apartados: numerosApartados
+      };
+    }));
+
+    res.json(rifasConConteo);
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: "Error al obtener rifas" });
+  }
 });
 
 // Obtener rifa activa
-router.get("/activa", (req, res) => {
-  db.query(
-    "SELECT * FROM rifas WHERE activa = 1 AND finalizada = 0 LIMIT 1",
-    (err, results) => {
-      if (err)
-        return res.status(500).json({ error: "Error al obtener activa" });
-      if (results.length === 0)
+router.get("/activa", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('rifas')
+      .select('*')
+      .eq('activa', true)
+      .eq('finalizada', false)
+      .limit(1)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
         return res.status(404).json({ error: "No hay rifa activa" });
-      res.json(results[0]);
+      }
+      throw error;
     }
-  );
+
+    res.json(data);
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: "Error al obtener rifa activa" });
+  }
 });
 
 // Crear rifa
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const {
     titulo,
     descripcion,
@@ -48,82 +76,106 @@ router.post("/", (req, res) => {
     cantidad_numeros,
   } = req.body;
 
-  function insertarRifa() {
-    const sql =
-      "INSERT INTO rifas (titulo, descripcion, precio, imagen, activa, finalizada, cantidad_numeros) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    const values = [
-      titulo,
-      descripcion,
-      precio,
-      imagen,
-      activa,
-      finalizada,
-      parseInt(cantidad_numeros),
-    ];
+  try {
+    // Verificar si ya existe una rifa activa
+    if (activa) {
+      const { data: rifasActivas, error: errorVerificacion } = await supabase
+        .from('rifas')
+        .select('id')
+        .eq('activa', true)
+        .eq('finalizada', false);
 
-    db.query(sql, values, (err, result) => {
-      if (err)
-        return res.status(500).json({ error: "Error al insertar la rifa" });
-
-      const id_rifa = result.insertId;
-      if (cantidad_numeros > 0) {
-        const numeros = [];
-        for (let i = 1; i <= cantidad_numeros; i++) {
-          numeros.push([i, id_rifa]);
-        }
-
-        db.query(
-          "INSERT INTO numeros_rifa (numero, id_rifa) VALUES ?",
-          [numeros],
-          (err) => {
-            if (err)
-              return res
-                .status(500)
-                .json({ error: "Error al generar números" });
-            res
-              .status(201)
-              .json({ message: "Rifa y números creados", id: id_rifa });
-          }
-        );
-      } else {
-        res
-          .status(201)
-          .json({ message: "Rifa creada sin números", id: id_rifa });
+      if (errorVerificacion) throw errorVerificacion;
+      
+      if (rifasActivas.length > 0) {
+        return res.status(400).json({ error: "Ya hay una rifa activa" });
       }
+    }
+
+    // Insertar la nueva rifa
+    const { data: nuevaRifa, error: errorRifa } = await supabase
+      .from('rifas')
+      .insert([{
+        titulo,
+        descripcion,
+        precio,
+        imagen,
+        activa,
+        finalizada,
+        cantidad_numeros: parseInt(cantidad_numeros),
+      }])
+      .select()
+      .single();
+
+    if (errorRifa) throw errorRifa;
+
+    // Generar números si es necesario
+    if (cantidad_numeros > 0) {
+      const numeros = Array.from({ length: cantidad_numeros }, (_, i) => ({
+        numero: i + 1,
+        id_rifa: nuevaRifa.id,
+        estado: 'disponible'
+      }));
+
+      const { error: errorNumeros } = await supabase
+        .from('numeros_rifa')
+        .insert(numeros);
+
+      if (errorNumeros) throw errorNumeros;
+    }
+
+    res.status(201).json({
+      message: cantidad_numeros > 0 ? "Rifa y números creados" : "Rifa creada sin números",
+      id: nuevaRifa.id
     });
-  }
-
-  if (activa) {
-    db.query(
-      "SELECT COUNT(*) AS total FROM rifas WHERE activa = 1 AND finalizada = 0",
-      (err, result) => {
-        if (err)
-          return res.status(500).json({ error: "Error al verificar activa" });
-        if (result[0].total > 0) {
-          return res.status(400).json({ error: "Ya hay una rifa activa" });
-        }
-        insertarRifa();
-      }
-    );
-  } else {
-    insertarRifa();
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: "Error al crear la rifa" });
   }
 });
 
 // Cambiar estado de rifa
-router.put("/:id", (req, res) => {
+router.put("/:id", async (req, res) => {
   const { estado } = req.body;
-  const finalizada = estado === 1 ? 1 : 0;
-  const activa = estado === 1 ? 0 : 1;
-  db.query(
-    "UPDATE rifas SET finalizada = ?, activa = ? WHERE id = ?",
-    [finalizada, activa, req.params.id],
-    (err) => {
-      if (err)
-        return res.status(500).json({ error: "Error al actualizar estado" });
-      res.json({ message: "Estado actualizado correctamente" });
+  const rifaId = req.params.id;
+
+  try {
+    // Si vamos a activar una rifa, primero verificamos que no haya otra activa
+    if (estado === 1) {
+      const { data: rifasActivas, error: errorVerificacion } = await supabase
+        .from('rifas')
+        .select('id')
+        .eq('activa', true)
+        .eq('finalizada', false);
+
+      if (errorVerificacion) throw errorVerificacion;
+      
+      if (rifasActivas.length > 0 && !rifasActivas.some(r => r.id === parseInt(rifaId))) {
+        return res.status(400).json({ error: "Ya hay una rifa activa" });
+      }
+
+      // Activar la rifa
+      const { error } = await supabase
+        .from('rifas')
+        .update({ activa: true, finalizada: false })
+        .eq('id', rifaId);
+
+      if (error) throw error;
+    } else {
+      // Finalizar la rifa
+      const { error } = await supabase
+        .from('rifas')
+        .update({ activa: false, finalizada: true })
+        .eq('id', rifaId);
+
+      if (error) throw error;
     }
-  );
+
+    res.json({ message: "Estado actualizado correctamente" });
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: "Error al actualizar estado" });
+  }
 });
 
 module.exports = router;

@@ -1,17 +1,21 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const supabase = require('../supabaseClient');
 
-router.get("/:rifaId", (req, res) => {
-  db.query(
-    "SELECT id, numero, estado FROM numeros_rifa WHERE id_rifa = ? ORDER BY numero ASC",
-    [req.params.rifaId],
-    (err, results) => {
-      if (err)
-        return res.status(500).json({ error: "Error al obtener números" });
-      res.json(results);
-    }
-  );
+router.get("/:rifaId", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('numeros_rifa')
+      .select('id, numero, estado')
+      .eq('id_rifa', req.params.rifaId)
+      .order('numero');
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: "Error al obtener números" });
+  }
 });
 
 module.exports = router;

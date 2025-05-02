@@ -37,6 +37,20 @@ document.addEventListener("DOMContentLoaded", () => {
           rifaCard.className =
             "bg-white shadow-md rounded-2xl overflow-hidden flex flex-col md:flex-row gap-4 p-5 mb-6 items-center";
 
+          // Determinar el estado y el estilo
+          let estadoTexto;
+          let estadoEstilo;
+          if (rifa.finalizada) {
+            estadoTexto = "Finalizada";
+            estadoEstilo = "bg-red-100 text-red-700";
+          } else if (rifa.activa) {
+            estadoTexto = "Activa";
+            estadoEstilo = "bg-green-100 text-green-700";
+          } else {
+            estadoTexto = "Inactiva";
+            estadoEstilo = "bg-gray-100 text-gray-700";
+          }
+
           rifaCard.innerHTML = `
             <img 
               src="${rifa.imagen || "https://via.placeholder.com/200x150"}" 
@@ -44,19 +58,11 @@ document.addEventListener("DOMContentLoaded", () => {
               class="w-full md:w-48 h-32 object-cover rounded-lg shadow-md"
             />
             <div class="flex-1">
-              <h2 class="text-2xl font-bold text-gray-800 mb-1">${
-                rifa.titulo
-              }</h2>
+              <h2 class="text-2xl font-bold text-gray-800 mb-1">${rifa.titulo}</h2>
               <p class="text-gray-600 mb-2">${rifa.descripcion}</p>
-              <p class="text-lg font-semibold text-blue-600 mb-2">${
-                rifa.precio
-              } Bs.</p>
-              <span class="inline-block px-3 py-1 text-sm rounded-full ${
-                rifa.finalizada === 1
-                  ? "bg-red-100 text-red-700"
-                  : "bg-green-100 text-green-700"
-              }">
-                ${rifa.finalizada === 1 ? "Finalizada" : "Activa"}
+              <p class="text-lg font-semibold text-blue-600 mb-2">${rifa.precio} Bs.</p>
+              <span class="inline-block px-3 py-1 text-sm rounded-full ${estadoEstilo}">
+                ${estadoTexto}
               </span>
             </div>
           `;

@@ -1,6 +1,7 @@
 const grid = document.getElementById("grid");
 const seleccionados = document.getElementById("seleccionados");
 const selectedNumbers = new Set();
+const selectedIds = new Map(); // Mapa para almacenar la relación número -> id
 
 function actualizarLista() {
   seleccionados.innerHTML = "";
@@ -17,7 +18,7 @@ function actualizarLista() {
       .forEach((num) => {
         const chip = document.createElement("div");
         chip.className =
-          "flex items-center gap-2 bg-blue-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm animate-fade-in";
+          "flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm animate-fade-in";
         chip.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Nº ${num}`;
         seleccionados.appendChild(chip);
       });
@@ -50,54 +51,13 @@ async function cargarNumeros() {
         btn.disabled = true;
       } else {
         btn.addEventListener("click", () => {
-          if (selectedNumbers.has(id)) {
-            selectedNumbers.delete(id);
+          if (selectedNumbers.has(numero)) {
+            selectedNumbers.delete(numero);
+            selectedIds.delete(numero);
             btn.classList.remove("bg-green-300");
           } else {
-            selectedNumbers.add(id);
-            btn.classList.add("bg-green-300");
-          }
-          actualizarLista();
-        });
-      }
-
-      grid.appendChild(btn);
-    });
-
-    actualizarLista();
-  } catch (error) {
-    console.error("Error al cargar números:", error);
-  }
-}
-async function cargarNumeros() {
-  try {
-    const resRifa = await fetch("/api/rifas/activa");
-    const rifa = await resRifa.json();
-    rifaActiva = rifa;
-
-    const resNumeros = await fetch(`/api/numeros/${rifa.id}`);
-    const numeros = await resNumeros.json();
-
-    numeros.forEach((numeroObj) => {
-      const { id, numero, estado } = numeroObj;
-      const btn = document.createElement("button");
-      btn.textContent = numero;
-      btn.className =
-        "bg-white border border-gray-300 rounded-lg py-2 text-lg text-gray-700 hover:bg-blue-200 transition w-full";
-
-      if (estado === "apartado") {
-        btn.classList.add("bg-yellow-300", "cursor-not-allowed");
-        btn.disabled = true;
-      } else if (estado === "pagado") {
-        btn.classList.add("bg-green-400", "cursor-not-allowed");
-        btn.disabled = true;
-      } else {
-        btn.addEventListener("click", () => {
-          if (selectedNumbers.has(id)) {
-            selectedNumbers.delete(id);
-            btn.classList.remove("bg-green-300");
-          } else {
-            selectedNumbers.add(id);
+            selectedNumbers.add(numero);
+            selectedIds.set(numero, id);
             btn.classList.add("bg-green-300");
           }
           actualizarLista();
@@ -161,7 +121,7 @@ document.getElementById("formUsuario").addEventListener("submit", async (e) => {
     apellido: formData.get("apellido"),
     telefono: formData.get("telefono"),
     correo: formData.get("correo"),
-    numeros: [...selectedNumbers],
+    numeros: Array.from(selectedNumbers).map(num => selectedIds.get(num)), // Enviamos los IDs en lugar de los números
   };
 
   try {
@@ -172,10 +132,32 @@ document.getElementById("formUsuario").addEventListener("submit", async (e) => {
     });
 
     if (res.ok) {
-      mostrarToast("¡Números apartados exitosamente!", "success");
-      setTimeout(() => location.reload(), 1500); // Pequeño delay antes de recargar
+      // Mostrar mensaje de advertencia
+      const confirmado = await confirmarAccion(
+        "¡Números apartados exitosamente! Los números cuya compra no se concrete en un plazo de 1 hora serán liberados nuevamente. ¿Deseas continuar con el Proceso?"
+      );
+      
+      if (confirmado) {
+        // Preparar mensaje para WhatsApp
+        const numerosStr = Array.from(selectedNumbers).sort((a, b) => a - b).join(", ");
+        const montoTotal = selectedNumbers.size * rifaActiva.precio;
+        const mensaje = `Hola, soy ${data.nombre} ${data.apellido}.\n\n` +
+          `He apartado los siguientes números:\n${numerosStr}\n\n` +
+          `Monto total a pagar: ${montoTotal} Bs.\n\n` +
+          `Mis datos:\n` +
+          `Cédula: ${data.cedula}\n` +
+          `Teléfono: ${data.telefono}\n` +
+          `Correo: ${data.correo || "No especificado"}`;
+
+        // Redirigir a WhatsApp
+        const whatsappUrl = `https://wa.me/584169809812?text=${encodeURIComponent(mensaje)}`;
+        window.open(whatsappUrl, '_blank');
+      }
+      
+      setTimeout(() => location.reload(), 1500);
     } else {
-      mostrarToast("Hubo un error al apartar tus números.", "error");
+      const errorData = await res.json();
+      mostrarToast(errorData.error || "Hubo un error al apartar tus números.", "error");
     }
   } catch (error) {
     console.error("Error al enviar datos:", error);

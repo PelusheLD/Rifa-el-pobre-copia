@@ -1,10 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const mysql = require("mysql2");
-const db = require("../db");
+const supabase = require('../supabaseClient');
 
 // Actualizar estado de la rifa (activar/desactivar)
-router.put("/rifas/:id", (req, res) => {
+router.put("/rifas/:id", async (req, res) => {
   const { id } = req.params;
   const { estado } = req.body;
 
@@ -15,34 +14,47 @@ router.put("/rifas/:id", (req, res) => {
   const finalizada = estado === 1 ? 1 : 0;
   const activa = estado === 1 ? 0 : 1;
 
-  const sql = "UPDATE rifas SET finalizada = ?, activa = ? WHERE id = ?";
-  db.query(sql, [finalizada, activa, id], (err, result) => {
-    if (err) {
-      console.error("Error al actualizar la rifa:", err);
-      return res.status(500).json({ error: "Error al actualizar la rifa" });
-    }
+  try {
+    const { error } = await supabase
+      .from('rifas')
+      .update({ 
+        finalizada,
+        activa 
+      })
+      .eq('id', id);
 
+    if (error) throw error;
+    
     res.json({ message: "Rifa actualizada correctamente" });
-  });
+  } catch (err) {
+    console.error('Error al actualizar la rifa:', err);
+    res.status(500).json({ error: "Error al actualizar la rifa" });
+  }
 });
 
 // Obtener la rifa activa
-router.get("/rifas/activa", (req, res) => {
-  const query =
-    "SELECT * FROM rifas WHERE activa = 1 AND finalizada = 0 LIMIT 1";
+router.get("/rifas/activa", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('rifas')
+      .select('*')
+      .eq('activa', true)
+      .eq('finalizada', false)
+      .limit(1)
+      .single();
 
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error("Error al obtener la rifa activa:", err);
-      return res.status(500).json({ error: "Error al obtener la rifa activa" });
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ error: "No hay rifa activa" });
+      }
+      throw error;
     }
 
-    if (results.length === 0) {
-      return res.status(404).json({ error: "No hay rifa activa" });
-    }
-
-    res.json(results[0]);
-  });
+    res.json(data);
+  } catch (err) {
+    console.error('Error al obtener la rifa activa:', err);
+    res.status(500).json({ error: "Error al obtener la rifa activa" });
+  }
 });
 
 module.exports = router;

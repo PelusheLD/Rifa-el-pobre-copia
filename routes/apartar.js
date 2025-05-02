@@ -1,81 +1,71 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const supabase = require('../supabaseClient');
 
-router.post("/", (req, res) => {
-  const { id_rifa, numeros, cedula, nombre, apellido, telefono, correo } =
-    req.body;
-  const fecha = new Date();
+router.post("/", async (req, res) => {
+  const { id_rifa, numeros, cedula, nombre, apellido, telefono, correo } = req.body;
 
-  if (
-    !id_rifa ||
-    !numeros?.length ||
-    !cedula ||
-    !nombre ||
-    !apellido ||
-    !telefono
-  ) {
+  if (!id_rifa || !numeros || numeros.length === 0 || !nombre || !apellido || !telefono) {
     return res.status(400).json({ error: "Datos incompletos" });
   }
 
-  // 1. Primero actualizamos todos los registros existentes de esa cédula en la rifa
-  const actualizarDatosPrevios = `
-    UPDATE numeros_rifa 
-    SET nombre = ?, apellido = ?, telefono = ?, correo = ?
-    WHERE id_rifa = ? AND cedula = ?
-  `;
+  const fecha = new Date().toISOString();
 
-  db.query(
-    actualizarDatosPrevios,
-    [nombre, apellido, telefono, correo || null, id_rifa, cedula],
-    (err) => {
-      if (err) {
-        console.error("Error actualizando datos previos:", err);
-        return res
-          .status(500)
-          .json({ error: "Error al actualizar datos anteriores" });
-      }
+  try {
+    // Primero liberamos cualquier número apartado previo con la misma cédula
+    if (cedula) {
+      const { error: errorLiberacion } = await supabase
+        .from('numeros_rifa')
+        .update({
+          estado: 'disponible',
+          cedula: null,
+          nombre: null,
+          apellido: null,
+          telefono: null,
+          correo: null,
+          fecha_apartado: null
+        })
+        .eq('id_rifa', id_rifa)
+        .eq('cedula', cedula)
+        .eq('estado', 'apartado');
 
-      // 2. Ahora apartamos los nuevos números
-      const query = `
-        UPDATE numeros_rifa 
-        SET estado = 'apartado', cedula = ?, nombre = ?, apellido = ?, telefono = ?, correo = ?, fecha_apartado = ?
-        WHERE id = ? AND estado = 'disponible'
-      `;
-
-      let actualizados = 0;
-      const errores = [];
-
-      const actualizarSiguiente = (i) => {
-        if (i >= numeros.length) {
-          return res.json({
-            mensaje: `${actualizados} número(s) apartados`,
-            errores,
-          });
-        }
-
-        db.query(
-          query,
-          [
-            cedula,
-            nombre,
-            apellido,
-            telefono,
-            correo || null,
-            fecha,
-            numeros[i],
-          ],
-          (err, result) => {
-            if (err) errores.push({ id: numeros[i], error: err.message });
-            else if (result.affectedRows > 0) actualizados++;
-            actualizarSiguiente(i + 1);
-          }
-        );
-      };
-
-      actualizarSiguiente(0);
+      if (errorLiberacion) throw errorLiberacion;
     }
-  );
+
+    // Ahora apartamos los nuevos números
+    let actualizados = 0;
+    const errores = [];
+
+    for (const numeroId of numeros) {
+      const { error } = await supabase
+        .from('numeros_rifa')
+        .update({
+          estado: 'apartado',
+          cedula,
+          nombre,
+          apellido,
+          telefono,
+          correo: correo || null,
+          fecha_apartado: fecha
+        })
+        .eq('id', numeroId)
+        .eq('estado', 'disponible');
+
+      if (error) {
+        errores.push({ id: numeroId, error: error.message });
+      } else {
+        actualizados++;
+      }
+    }
+
+    res.json({
+      mensaje: `${actualizados} número(s) apartados`,
+      errores
+    });
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: "Error al apartar números" });
+  }
 });
 
 module.exports = router;
