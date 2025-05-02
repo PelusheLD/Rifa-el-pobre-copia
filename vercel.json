@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/rifas.js", "use": "@vercel/node" },
+    { "src": "api/numeros.js", "use": "@vercel/node" },
+    { "src": "api/apartar.js", "use": "@vercel/node" },
+    { "src": "api/participantes.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/rifas", "dest": "api/rifas.js" },
+    { "src": "/api/numeros", "dest": "api/numeros.js" },
+    { "src": "/api/apartar", "dest": "api/apartar.js" },
+    { "src": "/api/participantes", "dest": "api/participantes.js" },
+    { "src": "/(.*)", "dest": "public/$1" }
+  ]
+}
