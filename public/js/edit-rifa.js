@@ -10,14 +10,16 @@ function mostrarFormularioEditarEstado() {
     <div id="pagination" class="flex justify-center mt-6"></div>
   `;
 
-  fetch("http://localhost:3000/api/rifas")
+  fetch("/api/rifas")
     .then((res) => res.json())
     .then((rifas) => {
       // Ordenamos por ID de manera descendente
       rifas.sort((a, b) => b.id - a.id);
 
       // Detectamos si ya hay una rifa activa
-      const rifaActiva = rifas.find((r) => r.activa === true && r.finalizada === false);
+      const rifaActiva = rifas.find(
+        (r) => r.activa === true && r.finalizada === false
+      );
 
       // Paginación
       const totalPages = Math.ceil(rifas.length / itemsPerPage);
@@ -50,18 +52,24 @@ function mostrarFormularioEditarEstado() {
                 ? "bg-green-100 text-green-800"
                 : "bg-gray-100 text-gray-800"
             }">
-              ${rifa.finalizada ? "Finalizada" : rifa.activa ? "Activa" : "Inactiva"}
+              ${
+                rifa.finalizada
+                  ? "Finalizada"
+                  : rifa.activa
+                  ? "Activa"
+                  : "Inactiva"
+              }
             </span>
           </p>
           <div class="space-x-2">
             <button
               class="bg-yellow-500 text-white py-1 px-4 rounded ${
-                (rifa.activa || (rifaActiva && rifaActiva.id !== rifa.id))
+                rifa.activa || (rifaActiva && rifaActiva.id !== rifa.id)
                   ? "opacity-50 cursor-not-allowed"
                   : ""
               }"
               onclick="${
-                (rifa.activa || (rifaActiva && rifaActiva.id !== rifa.id))
+                rifa.activa || (rifaActiva && rifaActiva.id !== rifa.id)
                   ? "mostrarToast('No se puede activar esta rifa en este momento', 'error')"
                   : `editarRifa(${rifa.id}, 'activa')`
               }"
@@ -140,10 +148,10 @@ function mostrarFormularioEditarEstado() {
 // Función para cambiar el estado de la rifa
 window.editarRifa = function (id, estado) {
   const payload = {
-    estado: estado === "activa" ? 1 : 0  // 1 para activar, 0 para finalizar
+    estado: estado === "activa" ? 1 : 0, // 1 para activar, 0 para finalizar
   };
 
-  fetch(`http://localhost:3000/api/rifas/${id}`, {
+  fetch(`/api/rifas/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

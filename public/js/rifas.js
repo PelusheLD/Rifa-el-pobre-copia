@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultadosPorPagina = 6;
   let paginaActual = 1;
 
-  fetch("http://localhost:3000/api/rifas")
+  fetch("/api/rifas")
     .then((res) => {
       if (!res.ok) {
         throw new Error("Error al obtener las rifas");
@@ -58,9 +58,13 @@ document.addEventListener("DOMContentLoaded", () => {
               class="w-full md:w-48 h-32 object-cover rounded-lg shadow-md"
             />
             <div class="flex-1">
-              <h2 class="text-2xl font-bold text-gray-800 mb-1">${rifa.titulo}</h2>
+              <h2 class="text-2xl font-bold text-gray-800 mb-1">${
+                rifa.titulo
+              }</h2>
               <p class="text-gray-600 mb-2">${rifa.descripcion}</p>
-              <p class="text-lg font-semibold text-blue-600 mb-2">${rifa.precio} Bs.</p>
+              <p class="text-lg font-semibold text-blue-600 mb-2">${
+                rifa.precio
+              } Bs.</p>
               <span class="inline-block px-3 py-1 text-sm rounded-full ${estadoEstilo}">
                 ${estadoTexto}
               </span>

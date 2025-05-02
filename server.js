@@ -30,11 +30,3 @@ app.get("/admin", adminAuth, (req, res) => {
 });
 
 // Rutas separadas
-app.use("/api/rifas", require("./routes/rifas"));
-app.use("/api/numeros", require("./routes/numeros"));
-app.use("/api/apartar", require("./routes/apartar"));
-app.use("/api/participantes", require("./routes/participantes"));
-
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en http://localhost:${PORT}`);
-});
